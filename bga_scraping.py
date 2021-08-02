@@ -12,7 +12,10 @@ GAMES = '/gamestats/gamestats/getGames.html'
 ARCHIVE = '/gamereview/gamereview/requestTableArchive.html'
 REPLAY = '/archive/archive/logs.html'
 GAME_ID = 1003
-
+SEASONS = {
+    4: {'start': 1609822800, 'end': 1617681600},
+    5: {'start': 1617681600, 'end': 1625544000}
+}
 DEPELETED = 'You have reached a limit (replay)'
 NO_ACCESS = 'Sorry, you need to be registered more than 24 hours and have played at least 2 games to access this feature.'
 
@@ -28,14 +31,15 @@ def session_generator():
         sess.post(BASE + LOGIN, data=login_info)
         yield sess
 
-def get_top_tables_players(sess, season, start_date, end_date, number=10):
+def get_top_arena_tables(season, number=10):
     """ Returns a map with table ids to player ids for arena games with the top players.
     """
 
+    sess = next(session_generator())
     tables = defaultdict(list)
     for rank in range(1, number + 1):
         player_id = get_player_by_rank(sess, rank, season)
-        for table_id in get_arena_tables(sess, player_id, start_date, end_date):
+        for table_id in get_arena_tables(sess, player_id, SEASONS[season]['start'], SEASONS[season]['end']):
             tables[table_id].append(player_id)
     return tables
 

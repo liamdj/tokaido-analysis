@@ -1,14 +1,6 @@
-import bga_scraping as bga
 import json
 from collections import namedtuple
 import pandas as pd
-
-SEASONS = {
-    4: {'start': 1609822800, 'end': 1617681600},
-    5: {'start': 1617681600, 'end': 1625544000}
-}
-
-#    bga.save_table_replays_batch(bga.session_generator(), tables.keys(), path)
 
 def parse_game_result(file_path):
     """ Returns map from player id to traveler, position, score, and rank for each player from a stored table replay,
