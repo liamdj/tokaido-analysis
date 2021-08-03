@@ -62,7 +62,9 @@ def get_arena_tables(sess, player_id, start_date, end_date):
     while True:
         params['page'] += 1
         resp = sess.get(BASE + GAMES, params=params)
-        ids = [int(table['table_id']) for table in resp.json()['data']['tables'] if table['arena_win'] != None and table['unranked'] != '1']
+        # get ranked arena tables that were not forfeit 
+        valid = lambda table: table['arena_win'] != None and table['unranked'] != '1' and int(table['scores'].split(',')[0]) > 1
+        ids = [int(table['table_id']) for table in resp.json()['data']['tables'] if valid(table)]
         if len(ids) == 0:
             break
         table_ids.extend(ids)
