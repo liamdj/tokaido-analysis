@@ -37,16 +37,16 @@ def parse_game_result(file_path):
 def summary_data(df):
     return len(df.index), df['placement'].mean(), df['placement'].std(), df['points'].mean(), df['points'].std(), df['achievements'].mean()
 
-def create_results_summary(tables):
+def create_results_summary(tables, path):
 
     Result = namedtuple('Result', ['table_id', 'traveler', 'position', 'placement', 'points', 'achievements'])
     results = []
     for table_id, players in tables.items():
-        outcomes = parse_game_result('s5-arena/replays/{}.json'.format(table_id))
+        outcomes = parse_game_result('{}/replays/{}.json'.format(path, table_id))
         if outcomes:
             results.extend([Result(table_id, res[0], res[1], res[2], res[3], res[4]) for id, res in outcomes.items() if id in players])
     data = pd.DataFrame(results)
-    data.to_csv('s5-arena/results.csv')
+    data.to_csv('{}/results.csv'.format(path))
 
     rows = {}
     rows['all'] = summary_data(data)
@@ -57,4 +57,4 @@ def create_results_summary(tables):
     
     summary = pd.DataFrame.from_dict(rows, orient='index', columns=['count', 'placement avg', 'placement std', 'points avg', 'points std', 'achievements avg'])
     summary.insert(0, 'frequency', summary['count'] / len(data))
-    summary.to_csv("s5-arena/summary.csv")
+    summary.to_csv("{}/summary.csv".format(path))

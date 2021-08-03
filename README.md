@@ -10,7 +10,7 @@ import arena_results as arena
 # get all tables with one of the top 10 season 5 arena players
 tables = bga.get_top_arena_tables(5, 10)
 # save the tables replays
-bga.save_table_replays_batch(tables.keys(), 's5-arena/replays')
+bga.save_table_replays_batch(tables.keys(), 's5-arena')
 # make a file with all results and a file with basic statistics
-arena.create_results_summary(tables)
+arena.create_results_summary(tables, 's5-arena')
 ```

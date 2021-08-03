@@ -12,9 +12,11 @@ GAMES = '/gamestats/gamestats/getGames.html'
 ARCHIVE = '/gamereview/gamereview/requestTableArchive.html'
 REPLAY = '/archive/archive/logs.html'
 GAME_ID = 1003
+# start and end dates
 SEASONS = {
-    4: {'start': 1609822800, 'end': 1617681600},
-    5: {'start': 1617681600, 'end': 1625544000}
+    2: (1594008000, 1601870400),
+    4: (1609822800, 1617681600),
+    5: (1617681600, 1625544000)
 }
 DEPELETED = 'You have reached a limit (replay)'
 NO_ACCESS = 'Sorry, you need to be registered more than 24 hours and have played at least 2 games to access this feature.'
@@ -39,7 +41,7 @@ def get_top_arena_tables(season, number=10):
     tables = defaultdict(list)
     for rank in range(1, number + 1):
         player_id = get_player_by_rank(sess, rank, season)
-        for table_id in get_arena_tables(sess, player_id, SEASONS[season]['start'], SEASONS[season]['end']):
+        for table_id in get_arena_tables(sess, player_id, SEASONS[season][0], SEASONS[season][1]):
             tables[table_id].append(player_id)
     return tables
 
@@ -75,15 +77,16 @@ def save_table_replays_batch(table_ids, path):
     generator = session_generator()
     sess = next(generator, None)
     for index, id in enumerate(table_ids):
-        if not os.path.isfile('{}/{}.json'.format(path, id)):
-            while sess and save_table_replay(sess, id, path):
+        fname = '{}/replays/{}.json'.format(path, id)
+        if not os.path.isfile(fname):
+            while sess and save_table_replay(sess, id, fname):
                 sess = next(generator, None)
         if not sess:
             print("Replays depleted for all logins. There are {} table replays remaining.".format(len(table_ids) - index))
             break
     return sess
 
-def save_table_replay(sess, table_id, path):
+def save_table_replay(sess, table_id, file_name):
     """ Saves replay log as json to file.
         Returns true if the current account is unable to access further replays.
     """
@@ -102,7 +105,7 @@ def save_table_replay(sess, table_id, path):
     
     try:
         moves = j['data']['data']['data']
-        with open('{}/{}.json'.format(path, table_id), 'w', encoding='utf-8') as file:
+        with open(file_name, 'w', encoding='utf-8') as file:
             json.dump(moves, file, ensure_ascii=False)
     except:
         print("Error saving replay for table {}:".format(table_id))
