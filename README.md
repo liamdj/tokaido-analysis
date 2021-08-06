@@ -1,7 +1,7 @@
 # Tokaido Analysis
 This repository contains tools to analyze the board game tokaido. [This article](https://medium.com/@liamjoh99/web-scraping-for-board-game-analysis-8f584379f3c) discusses the code and results for collecting bga arena mode games.
 
-To use the code, you must include a file `accounts.py` that defines `ACCOUNTS = [(email1, password1), (email2, password2), ...]`. Note that the number of replays each account can access is capped, and accounts must be a day old and have at least 2 completed games.
+To collect bga data, you must include a file `accounts.py` that defines `ACCOUNTS = [(email1, password1), (email2, password2), ...]`. Be mindful that scraping can incur significant costs for the website. Please contact a bga admin before attempting to use this code for scraping.
 
 The following produces the data and results used in the article:
 ```python
