@@ -7,16 +7,20 @@ from collections import defaultdict
 
 BASE = 'https://boardgamearena.com'
 LOGIN = '/account/account/login.html'
-RANKING = '/halloffame/halloffame/getRanking.html'
+ARENA_RANKING = '/halloffame/halloffame/getRanking.html'
+ELO_RANKING = '/gamepanel/gamepanel/getRanking.html'
 GAMES = '/gamestats/gamestats/getGames.html'
 ARCHIVE = '/gamereview/gamereview/requestTableArchive.html'
 REPLAY = '/archive/archive/logs.html'
 GAME_ID = 1003
 # start and end dates
 SEASONS = {
+    1: (1587009600, 1594008000),
     2: (1594008000, 1601870400),
+    3: (1601870400, 1609822800),
     4: (1609822800, 1617681600),
-    5: (1617681600, 1625544000)
+    5: (1617681600, 1625544000),
+    6: (1625544000, 1633492800)
 }
 DEPELETED = 'You have reached a limit (replay)'
 NO_ACCESS = 'Sorry, you need to be registered more than 24 hours and have played at least 2 games to access this feature.'
@@ -28,29 +32,35 @@ def session_generator():
         # request to a login page needed to produce csrf token
         resp = sess.get(BASE + '/account')
         soup = BeautifulSoup(resp.content, 'html.parser')
-        csrf_token = soup.find(id='csrf_token')['value']
-        login_info = {'email': email, 'password': password, 'rememberme': 'off', 'redirect': 'join', 'form_id': 'loginform', 'csrf_token': csrf_token}
+        token = soup.find(id='request_token')['value']
+        login_info = {'email': email, 'password': password, 'rememberme': 'off', 'redirect': 'join', 'form_id': 'loginform', 'request_token': token}
         sess.post(BASE + LOGIN, data=login_info)
         yield sess
 
-def get_top_arena_tables(season, number=10):
-    """ Returns a map with table ids to player ids for arena games with the top players.
+def get_season_tables_with_players(sess, season, player_ids):
+    """ Returns a map with table ids to player ids for arena games.
     """
 
-    sess = next(session_generator())
     tables = defaultdict(list)
-    for rank in range(1, number + 1):
-        player_id = get_player_by_rank(sess, rank, season)
-        for table_id in get_arena_tables(sess, player_id, SEASONS[season][0], SEASONS[season][1]):
-            tables[table_id].append(player_id)
+    for id in player_ids:
+        for table_id in get_arena_tables(sess, id, SEASONS[season][0], SEASONS[season][1]):
+            tables[table_id].append(id)
     return tables
 
-def get_player_by_rank(sess, rank, season):
+def get_player_by_arena_rank(sess, rank, season):
     """ Returns the id for the player with given rank for given arena season.
     """
-
+    # currently broken due ARENA_RANKING request issue
     params = {'start': rank-1, 'game': GAME_ID, 'mode': 'arena', 'season': season}
-    resp = sess.get(BASE + RANKING, params=params)
+    resp = sess.get(BASE + ARENA_RANKING, params=params)
+    return int(resp.json()['data']['ranks'][0]['id'])
+
+def get_player_by_elo_rank(sess, rank):
+    """ Returns the id for the player with given rank by elo.
+    """
+
+    params = {'start': rank-1, 'game': GAME_ID, 'mode': 'elo'}
+    resp = sess.get(BASE + ELO_RANKING, params=params)
     return int(resp.json()['data']['ranks'][0]['id'])
 
 def get_arena_tables(sess, player_id, start_date, end_date):
@@ -70,7 +80,7 @@ def get_arena_tables(sess, player_id, start_date, end_date):
         table_ids.extend(ids)
     return table_ids
 
-def save_table_replays_batch(table_ids, path):
+def save_table_replays_batch(table_ids):
     """ Saves replay logs for a list of tables. 
         Once an account reaches its replay limit, uses the next session from the generator. 
         Ignores table_ids for which a file already exists.
@@ -79,9 +89,9 @@ def save_table_replays_batch(table_ids, path):
     generator = session_generator()
     sess = next(generator, None)
     for index, id in enumerate(table_ids):
-        fname = '{}/replays/{}.json'.format(path, id)
+        fname = 'replays/{}.json'.format(id)
         if not os.path.isfile(fname):
-            while sess and save_table_replay(sess, id, fname):
+            while sess != None and save_table_replay(sess, id, fname):
                 sess = next(generator, None)
         if not sess:
             print("Replays depleted for all logins. There are {} table replays remaining.".format(len(table_ids) - index))
